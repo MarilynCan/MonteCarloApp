@@ -16,10 +16,10 @@
 #   limitations under the License.
 
 import math
-
 from scipy.stats import norm
 from scipy.stats import lognorm
-
+import scipy.stats as stats
+import numpy as np
 
 class LognormalMagnitude(object):
     def __init__(self, low_loss, high_loss):
@@ -71,7 +71,7 @@ class LognormalMagnitude(object):
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import numpy as np
+
 
 
 class PoissonFrequency(object):
@@ -148,12 +148,15 @@ class Loss(object):
         :arg: loss_array = Numpy array of simulated losses
         :returns: Dictionary of statistics about the loss
         """
-        percentiles = np.percentile(loss_array, [10,20,30,40,50,60,70,80, 90,95,98,99,99.5,99.9,99.99]).astype(int)
-        loss_summary = {'minimum': np.min(loss_array).astype(int),
-                        'mode': scipy.stats.mode(loss_array)[0][0].astype(int),
-                        'median': percentiles[4],
-                        'maximum': np.max(loss_array).astype(int),
-                        'mean': np.mean(loss_array).astype(int),
+        percentiles = np.percentile(loss_array, [10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99, 99.5, 99.9, 99.99]).astype(int)
+        mode_result = stats.mode(loss_array)
+        mode_values = mode_result.mode.tolist()
+        mode_value = mode_values[0] if mode_values else 0
+        loss_summary = {'Min': np.min(loss_array).astype(int),
+                        'Moda': mode_value,
+                        'Mediana': percentiles[4],
+                        'Max': np.max(loss_array).astype(int),
+                        'Media': np.mean(loss_array).astype(int),
                         'P10': percentiles[0],
                         'P20': percentiles[1],
                         'P30': percentiles[2],
@@ -170,6 +173,7 @@ class Loss(object):
                         'P99.9': percentiles[13],
                         'P99.99': percentiles[14]}
         return loss_summary
+
 
     def scatter_plot_losses_curve(self,
                      n,
