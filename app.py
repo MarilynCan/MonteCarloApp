@@ -116,7 +116,7 @@ def main():
         st.table(df_loss_summary)
 
         # Quinto gráfico
-        st.subheader("Prioritized Losses:")
+        st.subheader("Pérdidas priorizadas:")
         st.table(prioritized_losses_df[['Nombre', 'Ciberperdida Media Anual']])
 
 if __name__ == '__main__':
