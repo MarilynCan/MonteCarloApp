@@ -166,10 +166,10 @@ def main():
 
     # We use 'with' to create a sidebar on the left
     with st.sidebar:
-        # User inputs for simulation
-        num_time_units = st.number_input('Ingrese cantidad de tiempo a simular', min_value=1, value=1000)
-        time_unit = st.selectbox('Seleccione unidad de tiempo', ['Años', 'Meses'])
-        num_events = st.number_input('Ingrese cantidad de eventos a simular', min_value=1, value=1)
+        # User inputs for simulation        
+        time_unit = st.selectbox('Unidad de tiempo', ['Años', 'Meses'])
+        num_time_units = st.number_input('Rango de tiempo a simular', min_value=1, value=1000)
+        num_events = st.number_input('Número de eventos a simular', min_value=1, value=1)
 
         event_data = []
         for i in range(num_events):
