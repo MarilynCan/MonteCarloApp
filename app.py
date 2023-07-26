@@ -6,6 +6,7 @@ import pandas as pd
 import altair as alt
 from PIL import Image
 img = Image.open('logo.png')
+
 st.set_page_config(page_title='Alicorp', page_icon=img)
 
 
@@ -177,6 +178,10 @@ def main():
             low_loss = st.number_input(f'Pérdida mínima Evento {i + 1}', value=0)
             high_loss = st.number_input(f'Pérdida máxima Evento {i + 1}', value=0)
             event_data.append({'frecuencia': freq, 'low_loss': low_loss, 'high_loss': high_loss})
+
+            if low_loss > high_loss:
+                st.warning("La Pérdida mínima no puede ser mayor que la Pérdida máxima.")
+                st.stop()  # Stop further execution of the script if there's a warning
 
     # Check if the 'Simular' button was clicked.
     if st.sidebar.button('Simular'):
