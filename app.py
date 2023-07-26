@@ -4,120 +4,199 @@ import matplotlib.pyplot as plt
 from loss_models import PoissonFrequency, LognormalMagnitude, SimpleLoss, MultiLoss, Loss
 import pandas as pd
 import altair as alt
+from PIL import Image
+img = Image.open('logo.png')
+st.set_page_config(page_title='Alicorp', page_icon=img)
 
-def simulate_losses(event_data, num_years):
+
+def simulate_losses(event_data, time_unit):
+    """
+    Simulate losses based on event data and the number of time units.
+
+    Parameters:
+        event_data (list): A list of dictionaries containing information about each event.
+                           Each dictionary must have keys 'frecuencia', 'low_loss', and 'high_loss'.
+        num_years (int): The number of time units to simulate.
+
+    Returns:
+        Cp_mean: The mean cyber loss (Cp_mean) calculated from the simulated losses.
+        prioritized_losses_df: DataFrame containing prioritized losses with columns 'Nombre Evento', 'Nombre', and 'Ciberperdida Media'.
+        df_loss_summary: DataFrame containing the summary statistics of the simulated losses.
+        simulated_losses: Array containing the simulated losses.
+    """
     losses = []
+    # Create an empty DataFrame to store the summary statistics of the simulated losses
     df_loss_summary = pd.DataFrame(index=['Min', 'Moda', 'Mediana', 'Max', 'Media', 'P10', 'P20', 'P30', 'P40', 'P50', 'P60', 'P70', 'P80', 'P90', 'P95', 'P98', 'P99', 'P99.5', 'P99.9', 'P99.99'])
+
+    # Loop through each event and simulate losses
     for i, event in enumerate(event_data):
         freq = event['frecuencia']
         low_loss = event['low_loss']
         high_loss = event['high_loss']
+        
+        # Create a SimpleLoss model for the current event
         loss_model = SimpleLoss(label=f'Evento {i + 1}',
                                 name=f'Evento {i + 1}',
                                 frequency=freq,
                                 low_loss=low_loss,
                                 high_loss=high_loss)
-        simulated_losses_one = loss_model.simulate_years(num_years)
+        
+        # Simulate losses for the current event over the given number of time units
+        simulated_losses_one = loss_model.simulate_years(time_unit)
+        
+        # Calculate and store the summary statistics for the current event losses
         loss_summary_one = loss_model.summarize_loss(np.array(simulated_losses_one))
         losses.append(loss_model)
-        df_loss_summary[f'Evento {i + 1}'] = pd.Series(loss_summary_one)  # Agregar la columna al DataFrame
+        df_loss_summary[f'Evento {i + 1}'] = pd.Series(loss_summary_one)  # Add the column to the DataFrame
 
+    # Create a MultiLoss model to aggregate losses from all events
     multi_loss = MultiLoss(losses)
-    simulated_losses = multi_loss.simulate_years(num_years)
-    Cp_mean = np.sum(np.array(simulated_losses)) / num_years
+
+    # Simulate aggregated losses over the given number of time units
+    simulated_losses = multi_loss.simulate_years(time_unit)
+
+    # Calculate the mean cyber loss (Cp_mean) from the simulated losses
+    Cp_mean = np.sum(np.array(simulated_losses)) / time_unit
+
+    # Format the DataFrame to show numbers with one decimal place
     df_loss_summary = df_loss_summary.style.format(formatter="{:,.1f}")
+
+    # Get the prioritized losses as a DataFrame with columns 'Nombre Evento', 'Nombre', and 'Ciberperdida Media'
     prioritized_losses = multi_loss.prioritized_losses()
-    prioritized_losses_df = pd.DataFrame(prioritized_losses, columns=['Nombre Evento', 'Nombre', 'Ciberperdida Media Anual'])
+    prioritized_losses_df = pd.DataFrame(prioritized_losses, columns=['Nombre Evento', 'Nombre', 'Ciberperdida Media'])
 
-    return Cp_mean,prioritized_losses_df, df_loss_summary, simulated_losses
+    return Cp_mean, prioritized_losses_df, df_loss_summary, simulated_losses
 
-# Función para graficar el scatter plot
-def plot_scatter(losses):
-    years = range(1, len(losses) + 1)
-    data = pd.DataFrame({'Years': years, 'Losses': losses})
+
+def plot_scatter(losses, time_unit):
+    """
+    Plot a scatter chart for the given losses over time.
+
+    Parameters:
+        losses (list or numpy.ndarray): A list or array containing the losses over time.
+        time_unit (str): The unit of time to be used as the x-axis of the scatter chart.
+
+    Returns:
+        Chart
+    """
+    # Create a range of time units from 1 to the length of losses
+    tu = range(1, len(losses) + 1)
+    
+    # Create a DataFrame with time_unit as the x-axis and 'Losses' as the y-axis
+    data = pd.DataFrame({time_unit: tu, 'Losses': losses})
+    
+    # Create a scatter chart using Altair
     chart = alt.Chart(data).mark_circle().encode(
-        x='Years',
+        x=alt.X(time_unit),
         y='Losses',
-        tooltip=['Years', 'Losses']
+        tooltip=[time_unit, 'Losses']
     ).properties(
         width=800,
         height=500
     )
+    
+    # Display the chart using Streamlit's altair_chart function
     st.altair_chart(chart, use_container_width=True)
 
 def find_first_positive(arr):
+    """
+    Find the first positive value in the given array.
+
+    Parameters:
+        arr: A list or array containing numerical values.
+
+    Returns:
+        int or float or None: The first positive value found in the array. If no positive value is found, returns None.
+    """
+    # Loop through each number in the array
     for num in arr:
+        # Check if the number is greater than zero (positive)
         if num > 0:
+            # If a positive number is found, return it
             return num
-    return None  # Si no se encontró ningún valor mayor que cero
+    # If no positive number is found, return None
+    return None
 
 
 def loss_exceedance_curve(simulated_losses):
-    # Calcula los valores de pérdida para diferentes percentiles
+    """
+    Plot the loss exceedance curve based on the simulated losses.
+
+    Parameters:
+        simulated_losses (list or numpy.ndarray): A list or array containing the simulated losses.
+
+    Returns:
+        Chart
+    """
+    # Calculate the losses for different percentiles
     losses = np.array([np.percentile(list(simulated_losses), x) for x in range(1, 100, 1)])
     percentiles = np.array([float(100 - x) / 100.0 for x in range(1, 100, 1)])
 
-    # Calcula los límites mínimos y máximos de las pérdidas simuladas
+    # Calculate the minimum and maximum limits of the simulated losses
     x_min = find_first_positive(losses)
     x_max = max(losses)
 
-    # Crea un DataFrame para los datos de pérdida y percentiles
+    # Create a DataFrame to store the loss and percentile data
     data_df = pd.DataFrame({'Losses': losses, 'Percentiles': percentiles})
 
-    # Crea el gráfico Altair
+    # Create the Altair chart for the loss exceedance curve
     chart = alt.Chart(data_df).transform_filter(alt.datum.Losses > 0).mark_line().encode(
         x=alt.X('Losses', scale=alt.Scale(type="log", domain=[x_min, x_max]),  axis=alt.Axis(format=',.2r')),
         y=alt.Y('Percentiles', axis=alt.Axis(format='.0%'))
     )
 
-    # Configura los límites del eje y para que siempre muestre el rango completo del 0% al 100%
-    #chart = chart.encode(y=alt.Y('Percentiles', axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 1.0])))
-
-    # Muestra las líneas de cuadrícula en ambos ejes
+    # Display grid lines on both axes
     chart = chart.configure_axis(grid=True)
+
+    # Display the chart using Streamlit's altair_chart function
     st.altair_chart(chart, use_container_width=True)
 
-def main():
-    st.title('Simulación Monte Carlo')
+def main():  
+    # Hide Streamlit's default header and footer
+    hide_st_style = """
+    <style>
+    #MainMenu {visibility : hidden;}
+    footer {visibility: hidden;}
+    </style>
+    """
+    st.markdown(hide_st_style, unsafe_allow_html=True)
+    st.title('SIMULACIÓN MONTECARLO')  
 
-    # Usamos 'with' para crear una columna a la izquierda
+
+    # We use 'with' to create a sidebar on the left
     with st.sidebar:
-        num_years = st.number_input('Ingrese el número de años a simular', min_value=1, value=1000)
-        num_events = st.number_input('Ingrese la cantidad de eventos a simular', min_value=1, value=1)
+        # User inputs for simulation
+        num_time_units = st.number_input('Ingrese cantidad de tiempo a simular', min_value=1, value=1000)
+        time_unit = st.selectbox('Seleccione unidad de tiempo', ['Años', 'Meses'])
+        num_events = st.number_input('Ingrese cantidad de eventos a simular', min_value=1, value=1)
 
         event_data = []
         for i in range(num_events):
             st.write(f'Evento {i + 1}')
-            freq = st.number_input(f'Frecuencia del evento {i + 1}', min_value=0.01,max_value=1.0, value=0.5)
-            low_loss = st.number_input(f'Pérdida mínima del evento {i + 1}', value=0)
-            high_loss = st.number_input(f'Pérdida máxima del evento {i + 1}', value=0)
+            freq = st.number_input(f'Frecuencia Evento {i + 1}', min_value=0.01,max_value=1.0, value=0.5)
+            low_loss = st.number_input(f'Pérdida mínima Evento {i + 1}', value=0)
+            high_loss = st.number_input(f'Pérdida máxima Evento {i + 1}', value=0)
             event_data.append({'frecuencia': freq, 'low_loss': low_loss, 'high_loss': high_loss})
 
-    # Verificar si se hizo clic en el botón "Simular"
+    # Check if the 'Simular' button was clicked.
     if st.sidebar.button('Simular'):
-        Cp_mean ,prioritized_losses_df, df_loss_summary , losses = simulate_losses(event_data, num_years)
-        # Primer gráfico
-        st.subheader("Ciberperdida Media Anual Agregada:")
-        # Centrar y remarcar el título Cp_mean
-        #st.markdown(f'<div style="text-align:center;font-size:1.5em;font-weight:bold;">Cp_mean</div>', unsafe_allow_html=True)
-        # Centrar el valor numérico de Cp_mean
-        st.markdown(f'<div style="text-align:center;font-size:2em;background-color:#fce4ec;padding:5px;">{Cp_mean:,.1f}</div>', unsafe_allow_html=True)
-
-        # Segungo gráfico
-        st.subheader("Simulación de pérdidas")
-        plot_scatter(losses)
-
-        #  Tercer gráfico
-        st.subheader("Curva de Excedencia de Pérdidas")
+        Cp_mean ,prioritized_losses_df, df_loss_summary , losses = simulate_losses(event_data, num_time_units)
+        # First plot
+        st.subheader(f'Ciberpérdida Media Agregada - {time_unit}')        
+        # Center the numeric value of Cp_mean
+        st.markdown(f'<div style="text-align:center;font-size:2em;background-color:#b4b4b4;padding:5px;">{Cp_mean:,.1f}</div>', unsafe_allow_html=True)
+        # Second plot
+        st.subheader(f'Pérdidas Simuladas - {time_unit}')
+        plot_scatter(losses, time_unit)
+        # Third plot
+        st.subheader(f'Curva de Excedencia de Pérdidas - {time_unit}')
         loss_exceedance_curve(losses)
-
-        # Cuarto gráfico
-        st.subheader("Resumen de las pérdidas:")
+        # Fourth plot
+        st.subheader(f'Descriptivo Pérdidas - {time_unit}')
         st.table(df_loss_summary)
-
-        # Quinto gráfico
-        st.subheader("Pérdidas priorizadas:")
-        st.table(prioritized_losses_df[['Nombre', 'Ciberperdida Media Anual']])
+        # Fifth plot
+        st.subheader(f'Pérdidas Priorizadas - {time_unit}')
+        st.table(prioritized_losses_df[['Nombre', 'Ciberperdida Media']])
 
 if __name__ == '__main__':
     st.set_option('deprecation.showPyplotGlobalUse', False)  # Deshabilitar la advertencia
