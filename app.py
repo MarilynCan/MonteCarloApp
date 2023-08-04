@@ -5,8 +5,9 @@ from utils.helpers import PoissonFrequency, LognormalMagnitude, SimpleLoss, Mult
 import pandas as pd
 import altair as alt
 from PIL import Image
+import os
 
-img = Image.open('images/logo.png')
+img = Image.open('./images/logo.png')
 st.set_page_config(page_title='Alicorp', page_icon=img)
 
 
