@@ -100,26 +100,6 @@ def plot_scatter(losses, time_unit):
     # Display the chart using Streamlit's altair_chart function
     st.altair_chart(chart, use_container_width=True)
 
-def find_first_positive(arr):
-    """
-    Find the first positive value in the given array.
-
-    Parameters:
-        arr: A list or array containing numerical values.
-
-    Returns:
-        int or float or None: The first positive value found in the array. If no positive value is found, returns None.
-    """
-    # Loop through each number in the array
-    for num in arr:
-        # Check if the number is greater than zero (positive)
-        if num > 0:
-            # If a positive number is found, return it
-            return num
-    # If no positive number is found, return None
-    return None
-
-
 def loss_exceedance_curve(simulated_losses):
     """
     Plot the loss exceedance curve based on the simulated losses.
@@ -132,10 +112,11 @@ def loss_exceedance_curve(simulated_losses):
     """
     # Calculate the losses for different percentiles
     losses = np.array([np.percentile(list(simulated_losses), x) for x in range(1, 100, 1)])
-    percentiles = np.array([float(100 - x) / 100.0 for x in range(1, 100, 1)])
+    percentiles = np.array([float(100 - x) / 100.0 for x in range(1, 100, 1)])    
+
 
     # Calculate the minimum and maximum limits of the simulated losses
-    x_min = find_first_positive(losses)
+    x_min = [num for num in losses if num > 0][0] 
     x_max = max(losses)
 
     # Create a DataFrame to store the loss and percentile data
