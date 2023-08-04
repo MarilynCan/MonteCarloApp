@@ -1,12 +1,12 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from loss_models import PoissonFrequency, LognormalMagnitude, SimpleLoss, MultiLoss, Loss
+from utils.helpers import PoissonFrequency, LognormalMagnitude, SimpleLoss, MultiLoss, Loss
 import pandas as pd
 import altair as alt
 from PIL import Image
-img = Image.open('logo.png')
 
+img = Image.open('images/logo.png')
 st.set_page_config(page_title='Alicorp', page_icon=img)
 
 
