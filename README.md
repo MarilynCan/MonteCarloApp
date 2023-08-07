@@ -19,7 +19,7 @@ The application is built using Streamlit, a Python library for creating web appl
 3. Click the "Simular" button to run the simulation and view the results.
 4. The application will display visualizations and summary tables showing the simulated losses and analysis.
 
-![Appfinal](./images/screenshot1.jpg)
+![Appfinal](./images/img1.jpg)
 
 
 
