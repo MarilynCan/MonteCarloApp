@@ -156,7 +156,7 @@ def main():
         event_data = []
         for i in range(num_events):
             st.write(f'Evento {i + 1}')
-            freq = st.number_input(f'Frecuencia Evento {i + 1}', min_value=0.01,max_value=1.0, value=0.5)
+            freq = st.number_input(f'Probabilidad Evento {i + 1}', min_value=0.01,max_value=1.0, value=0.5)
             low_loss = st.number_input(f'Pérdida mínima Evento {i + 1}', value=0)
             high_loss = st.number_input(f'Pérdida máxima Evento {i + 1}', value=0)
             event_data.append({'frecuencia': freq, 'low_loss': low_loss, 'high_loss': high_loss})
